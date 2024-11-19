@@ -47,6 +47,7 @@ private static String translateWord(String input) {
 }
 
 
+
   // Add additonal private methods here.
   // For example, I had one like this:
   // private static String capitalizeFirstLetter(String input)
