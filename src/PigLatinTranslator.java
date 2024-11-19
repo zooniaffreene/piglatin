@@ -1,40 +1,51 @@
-import java.lang.*;
+private static String translateWord(String input) {
+    if (input == null || input.isEmpty()) {
+        return input;
+    }
 
-public class PigLatinTranslator
-{
-  public static Book translate(Book input)
-  {
-    Book translatedBook = new Book();
+    String word = input;
+    String punctuation = "";
 
-    // Add code here to populate translatedBook with a translation of the input book.
-    // Curent do-nothing code will return an empty book.
+    // Check for punctuation at the end
+    if (!Character.isLetter(word.charAt(word.length() - 1))) {
+        punctuation = word.substring(word.length() - 1);
+        word = word.substring(0, word.length() - 1);
+    }
 
-    return translatedBook;
-  }
+    // Check for capitalization
+    boolean isCapitalized = Character.isUpperCase(word.charAt(0));
 
-  public static String translate(String input)
-  {
-    // System.out.println("Translate String: '" + input + "'");
+    // Lowercase the word for processing
+    word = word.toLowerCase();
 
-    // Replace this code to translate a string input.
-    // The input to this function could be any English string. 
-    // A sentence, paragraph, or a single word. 
-    // It should call translateWord at least once.
-    String result = translateWord(input);
+    // Vowel check
+    if ("aeiou".indexOf(word.charAt(0)) != -1) {
+        word = word + "yay";
+    } else {
+        // Consonant handling
+        int vowelIndex = -1;
+        for (int i = 0; i < word.length(); i++) {
+            if ("aeiou".indexOf(word.charAt(i)) != -1) {
+                vowelIndex = i;
+                break;
+            }
+        }
+        if (vowelIndex != -1) {
+            word = word.substring(vowelIndex) + word.substring(0, vowelIndex) + "ay";
+        } else {
+            word = word + "ay"; // No vowels in the word
+        }
+    }
 
-    return result;
-  }
+    // Restore capitalization
+    if (isCapitalized) {
+        word = Character.toUpperCase(word.charAt(0)) + word.substring(1);
+    }
 
-  private static String translateWord(String input)
-  {
-    // System.out.println("translateWord: '" + input + "'");
+    // Add punctuation back
+    return word + punctuation;
+}
 
-    // Replace this code to correctly translate a single word.
-    // Start here first!
-    String result = input;
-    
-    return result;
-  }
 
   // Add additonal private methods here.
   // For example, I had one like this:
