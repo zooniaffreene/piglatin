@@ -1,55 +1,102 @@
-private static String translateWord(String input) {
-    if (input == null || input.isEmpty()) {
-        return input;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
+public class Book {
+    private List<String> text = new ArrayList<>();
+    private String title;
+
+    public Book(String title) {
+        this.title = title;
     }
 
-    String word = input;
-    String punctuation = "";
+    public void readFromHTML(String url) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(url).openStream()))) {
+            boolean isMainContent = false;
+            StringBuilder content = new StringBuilder();
 
-    // Check for punctuation at the end
-    if (!Character.isLetter(word.charAt(word.length() - 1))) {
-        punctuation = word.substring(word.length() - 1);
-        word = word.substring(0, word.length() - 1);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("*** START OF THIS PROJECT GUTENBERG EBOOK")) {
+                    isMainContent = true;
+                    continue;
+                } else if (line.contains("*** END OF THIS PROJECT GUTENBERG EBOOK")) {
+                    break;
+                }
+
+                if (isMainContent) {
+                    content.append(line).append("\n");
+                }
+            }
+
+            String rawText = content.toString().replaceAll("<[^>]+>", "").replaceAll("&nbsp;", " ").trim();
+            String[] lines = rawText.split("\n");
+
+            for (String textLine : lines) {
+                if (!textLine.isBlank()) {
+                    text.add(textLine.trim());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    // Check for capitalization
-    boolean isCapitalized = Character.isUpperCase(word.charAt(0));
+    public void translateToPigLatin() {
+        List<String> translatedText = new ArrayList<>();
 
-    // Lowercase the word for processing
-    word = word.toLowerCase();
+        for (String line : text) {
+            String[] words = line.split("\\s+");
+            StringBuilder translatedLine = new StringBuilder();
 
-    // Vowel check
-    if ("aeiou".indexOf(word.charAt(0)) != -1) {
-        word = word + "yay";
-    } else {
-        // Consonant handling
-        int vowelIndex = -1;
+            for (String word : words) {
+                translatedLine.append(toPigLatin(word)).append(" ");
+            }
+            translatedText.add(translatedLine.toString().trim());
+        }
+
+        text = translatedText;
+    }
+
+    private String toPigLatin(String word) {
+        String vowels = "AEIOUaeiou";
+        int firstVowelIndex = -1;
+
+        // Find the first vowel
         for (int i = 0; i < word.length(); i++) {
-            if ("aeiou".indexOf(word.charAt(i)) != -1) {
-                vowelIndex = i;
+            if (vowels.indexOf(word.charAt(i)) != -1) {
+                firstVowelIndex = i;
                 break;
             }
         }
-        if (vowelIndex != -1) {
-            word = word.substring(vowelIndex) + word.substring(0, vowelIndex) + "ay";
+
+        if (firstVowelIndex == -1) {
+            return word + "ay"; // No vowels
+        } else if (firstVowelIndex == 0) {
+            return word + "way"; // Starts with a vowel
         } else {
-            word = word + "ay"; // No vowels in the word
+            return word.substring(firstVowelIndex) + word.substring(0, firstVowelIndex) + "ay";
         }
     }
 
-    // Restore capitalization
-    if (isCapitalized) {
-        word = Character.toUpperCase(word.charAt(0)) + word.substring(1);
+    public void writeToFile() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(title + ".txt", true))) {
+            for (String line : text) {
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
-    // Add punctuation back
-    return word + punctuation;
+    public static void main(String[] args) {
+        Book book = new Book("TheWinter'sTale_PigLatin");
+        book.readFromHTML("https://www.gutenberg.org/cache/epub/1539/pg1539-images.html");
+        book.translateToPigLatin();
+        book.writeToFile();
+
+        System.out.println("Translation complete! Check the file: TheWinter'sTale_PigLatin.txt");
+    }
 }
 
-
-
-  // Add additonal private methods here.
-  // For example, I had one like this:
-  // private static String capitalizeFirstLetter(String input)
-
-}
