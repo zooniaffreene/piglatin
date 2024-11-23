@@ -1,96 +1,102 @@
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
-import java.util.ArrayList; 
+import java.util.*;
 
-public class Book
-{
-    // What should a book contain?
-    // Ideas: need to store text, need to store current reading position
-    //        title, author?, source URL, ... 
+public class Book {
+    private List<String> text = new ArrayList<>();
     private String title;
-    private ArrayList<String> text = new ArrayList<String>();
 
-    Book()
-    {
-        // Empty book
-    }
-
-    public void printlines(int start, int length)
-    {
-        System.out.println("Lines " + start + " to " + (start + length) + " of book: " + title);
-        for (int i=start; i<start+length; i++)
-        {
-            if (i < text.size())
-            {
-                System.out.println(i + ": " + text.get(i));
-            }
-            else
-            {
-                System.out.println(i + ": line not in book.");     
-            }
-        }
-    }
-
-    String getTitle()
-    {
-        return title;
-    }
-    void setTitle(String title)
-    {
+    public Book(String title) {
         this.title = title;
     }
 
-    String getLine(int lineNumber)
-    {
-        return text.get(lineNumber);
-    }
+    public void readFromHTML(String url) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(url).openStream()))) {
+            boolean isMainContent = false;
+            StringBuilder content = new StringBuilder();
 
-    int getLineCount()
-    {
-        return text.size();
-    }
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Skip Project Gutenberg header/footer
+                if (line.contains("*** START OF THIS PROJECT GUTENBERG EBOOK")) {
+                    isMainContent = true;
+                    continue;
+                } else if (line.contains("*** END OF THIS PROJECT GUTENBERG EBOOK")) {
+                    break;
+                }
 
-    void appendLine(String line)
-    {
-        text.add(line);
-    }
-
-    public void readFromString(String title, String string)
-    {
-        // load a book from an input string.
-        this.title = title;
-        Scanner scanner = new Scanner(string);
-        while (scanner.hasNext()) 
-        {
-            String line = scanner.nextLine();
-            text.add(line);
-        }
-        scanner.close();
-    }
-
-    public void readFromUrl(String title, String url)
-    {
-        // load a book from a URL.
-        // https://docs.oracle.com/javase/tutorial/networking/urls/readingURL.html
-        this.title = title;
-
-        try {
-            URL bookUrl = new URL(url);
-            Scanner scanner = new Scanner(bookUrl.openStream());
-            while (scanner.hasNext()) 
-            {
-                text.add(scanner.nextLine());
+                if (isMainContent) {
+                    content.append(line).append("\n");
+                }
             }
-            scanner.close();
+
+            // Strip HTML tags and split into lines
+            String rawText = content.toString().replaceAll("<[^>]+>", "").replaceAll("&nbsp;", " ").trim();
+            String[] lines = rawText.split("\n");
+
+            for (String textLine : lines) {
+                if (!textLine.isBlank()) {
+                    text.add(textLine.trim());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        catch(IOException ex) {
+    }
+
+    public void translateToPigLatin() {
+        List<String> translatedText = new ArrayList<>();
+
+        for (String line : text) {
+            String[] words = line.split("\\s+");
+            StringBuilder translatedLine = new StringBuilder();
+
+            for (String word : words) {
+                translatedLine.append(toPigLatin(word)).append(" ");
+            }
+            translatedText.add(translatedLine.toString().trim());
+        }
+
+        text = translatedText;
+    }
+
+    private String toPigLatin(String word) {
+        String vowels = "AEIOUaeiou";
+        int firstVowelIndex = -1;
+
+        for (int i = 0; i < word.length(); i++) {
+            if (vowels.indexOf(word.charAt(i)) != -1) {
+                firstVowelIndex = i;
+                break;
+            }
+        }
+
+        if (firstVowelIndex == -1) {
+            return word + "ay"; // No vowels
+        } else if (firstVowelIndex == 0) {
+            return word + "way"; // Starts with a vowel
+        } else {
+            return word.substring(firstVowelIndex) + word.substring(0, firstVowelIndex) + "ay";
+        }
+    }
+
+    public void writeToFile() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(title + ".txt", true))) {
+            for (String line : text) {
+                writer.write(line);
+                writer.newLine();
+            }
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
 
-    void writeToFile()
-    {
-        // Add code here to write the contents of the book to a file.
+    public static void main(String[] args) {
+        Book book = new Book("TheWinter'sTale_PigLatin");
+        book.readFromHTML("https://www.gutenberg.org/cache/epub/1539/pg1539-images.html");
+        book.translateToPigLatin();
+        book.writeToFile();
+
+        System.out.println("Translation complete! Check the file: TheWinter'sTale_PigLatin.txt");
     }
 }
